@@ -1,5 +1,6 @@
 import cv2
 import mediapipe as mp
+import time
 
 cap = cv2.VideoCapture(0)  # подключение к web-камере
 mp_Hands = mp.solutions.hands  # говорим, что хотим распознавать руки
@@ -10,6 +11,7 @@ thumb_coord = (4, 2)  # ключевые точки для большого па
 
 while cap.isOpened():  # пока камера "работает"
     success, image = cap.read()  # получение кадра с камеры
+    prevTime = time.time()
     if not success:  # если не удалось получить кадр
         print('Не удалось получить кадр с web-камеры')
         continue  # возвращаемся к ближайшему циклу
@@ -28,13 +30,24 @@ while cap.isOpened():  # пока камера "работает"
                 h, w, c = image.shape
                 x, y = int(lm.x * w), int(lm.y * h) 
                 fingersList.append((x, y))
+            side = 'left'
+            if fingersList[5][0] > fingersList[17][0]:
+                side = 'right'
+
             for coord in fingers_coord:
                 if fingersList[coord[0]][1] < fingersList[coord[1]][1]:
                     upCount += 1
-            if fingersList[thumb_coord[0]][0] < fingersList[thumb_coord[1]][0]:
-                upCount += 1
-
-    cv2.putText(image, str(upCount), (100, 150), cv2.FONT_ITALIC, 5, (0, 255, 0), 5)
+            if side == 'left': 
+                if fingersList[thumb_coord[0]][0] < fingersList[thumb_coord[1]][0]:
+                    upCount += 1
+            else:
+                if fingersList[thumb_coord[0]][0] > fingersList[thumb_coord[1]][0]:
+                    upCount += 1
+    
+    currentTime = time.time()
+    fps = 1 / (currentTime - prevTime)
+    cv2.putText(image, f"FPS: {fps}", (200, 100), cv2.FONT_ITALIC, 2, (255, 255, 255), 2)
+    cv2.putText(image, str(upCount), (100, 100), cv2.FONT_ITALIC, 2, (0, 255, 0), 2)
 
     cv2.imshow('web-cam', image)
 
